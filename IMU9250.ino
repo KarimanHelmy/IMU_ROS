@@ -2,65 +2,39 @@
 #include <ros/time.h>
 #include "MPU9250.h"
 
-#include <geometry_msgs/Vector3.h> 
-#include <tf/transform_broadcaster.h> 
+#include <sensor_msgs/Imu.h> // need this for generating imu messages in ros
 
 #include <Wire.h>
 
-MPU9250 IMU(Wire,0x68);
-int status;
-float AccX,AccY,AccZ,Tmp,GyX,GyY,GyZ,MagX,MagY,MagZ;
-geometry_msgs::TransformStamped t; 
-tf::TransformBroadcaster broadcaster;
+MPU9250 imu(Wire,0x68);
+
 ros::NodeHandle nh;
-geometry_msgs::Vector3 orient;
-ros::Publisher imu_pub("imu_data", &orient); 
-char frameid[] = "/base_link"; 
-char child[] = "/imu_frame";
+sensor_msgs::Imu imu_msg;
+ros::Publisher imu_data("/imu_data", &imu_msg);
 
 uint32_t seq;
 
 
 void read_IMU(){
-  IMU.readSensor();
-  AccX = IMU.getAccelX_mss();
-  AccY = IMU.getAccelY_mss(); 
-  AccZ = IMU.getAccelZ_mss();
+  imu_msg.header.frame_id= "/imu";
+  imu.readSensor();
+  imu_msg.linear_acceleration.x= imu.getAccelX_mss();
+  imu_msg.linear_acceleration.y = imu.getAccelY_mss(); 
+  imu_msg.linear_acceleration.z = imu.getAccelZ_mss();
+  Serial.print(imu_msg.linear_acceleration.x);
 
-  
-  MagX = IMU.getMagX_uT();
-  MagY = IMU.getMagY_uT();
-  MagZ = IMU.getMagZ_uT();
-
-  
-  GyX = IMU.getGyroX_rads();
-  GyY = IMU.getGyroY_rads();
-  GyZ = IMU.getGyroZ_rads();
-   imu_pub.publish(&orient);
-
+  imu_data.publish(&imu_msg);
   
 }
 void setup() {
+  nh.initNode();
   Wire.begin(); 
-        nh.initNode(); 
-        broadcaster.init(nh); 
-        nh.advertise(imu_pub); 
   Serial.begin(115200);
-  while(!Serial) {}
 
-  // start communication with IMU 
-  status = IMU.begin();
-  if (status < 0) {
-    Serial.println("IMU init/8ialization unsuccessful");
-    Serial.println("Check IMU wiring or try cycling power");
-    Serial.print("Status: ");
-    Serial.println(status);
-    while(1) {}
-    
-  }
-  else{
+      nh.advertise(imu_data);
+
     read_IMU();
-  }
+  
 }
 
   // put your setup code here, to run once:
@@ -68,10 +42,8 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  
   read_IMU();
   nh.spinOnce(); 
-    
     delay(200); 
 
 }
