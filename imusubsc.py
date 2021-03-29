@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import geometry_msgs
+import sensor_msgs.msg
 
 def callback(data):
     rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
@@ -12,6 +12,6 @@ def listener():
     # name for our 'listener' node so that multiple listeners can
     # run simultaneously.
     rospy.init_node('listener', anonymous=True)
-    rospy.Subscriber("imu_pub", geomtry, callback)
+    rospy.Subscriber("imu_pub", sensor_msg, callback)
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
